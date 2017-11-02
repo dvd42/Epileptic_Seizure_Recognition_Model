@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Nov 01 14:25:18 2017
-
 @author: Diego
 """
 
@@ -13,23 +11,35 @@ import collections as c
 
 # Import the dataset
 dataset = pd.read_csv("data.csv")
-x = np.sort(dataset.iloc[:,1:-1].values,axis=0)
+x = dataset.iloc[:,1:-1].values
 y = dataset.iloc[:,-1].values
 
-#TODO split dataset into training and test
+# Split dataset into training and test
+
+# Using holdout
+x_train = x[:x.shape[0]*2/3:,:]
+y_train = y[:y.size*2/3:]
+
+x_test = x[x_train.shape[0]:x.shape[0]:,:]
+y_test = y[y_train.size:y.size]
+
 
 # Get elements from each column in with steps of 100
-slices = x[0::100,:]
+slices = np.sort(x_train,axis=0)[0::100,:]
+
+# TODO fix uneven slices shape 
+if slices.shape[0] % 2 != 0:
+    slices = np.append(slices,x_train[-1,:])
 
 mid_points = []
 
 # Calculate the mid point for each 2 elements in each column
 for i in range(slices.shape[0]-1):
-    mid_points.append((slices[i,:] + slices[i + 1,:]) / 2)
+    mid_points.append((slices[:,i] + slices[0::2,i]) / 2.0)
     
     
 # TODO  Calculate the resulting entropy of branching with each mid point
-
+# TODO get mid_points by column
 # This is just an example of calculating the entropy when dividing by -36
 branch1 = y[dataset.iloc[:,178].values <= -36]
 branch2 = y[dataset.iloc[:,178].values > -36]
