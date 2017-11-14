@@ -19,17 +19,32 @@ def init_data():
     # Using holdout
     x_train = x[:x.shape[0]*2/3:,-3:]
     x_test = x[x_train.shape[0]:x.shape[0]:,:]
-
+    
+    #
     # Get elements from each column in with steps of 100
-    slices = np.sort(x_train[:,:-1],axis=0)[0::505,:]
+   
+    return x_train,x_test,tags
 
-    # TODO fix uneven slices shape 
+def calculate_mid_points(data):
+    
+    slices = np.sort(data[:,:-1],axis=0)
+
+    mid_points = slices[slices.shape[0]/2,:]
+    
+    return mid_points
+    
+    """
+    slices = np.sort(data[:,:-1],axis=0)[0::data.shape[0]*0.065,:]
+    
+    if slices.shape[0] % 2:
+        slices = np.append(slices,slices[-1].reshape((1,2)),axis=0)
+    
     
     mid_points = []
-
+    
     # Calculate the mid point for each 2 elements in each column
     for i in range(slices.shape[1]):
         mid_points.append((slices[0::2,i] + slices[1::2,i]) / 2.0)
-
-    return x_train,x_test,mid_points,tags
-
+    
+    return mid_points
+    """

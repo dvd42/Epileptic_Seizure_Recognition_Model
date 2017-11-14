@@ -6,26 +6,28 @@ Created on Mon Nov 13 09:13:02 2017
 @author: diego
 """
 
-from scipy import stats as st
 import collections as c
 import numpy as np
 import math as m
 
 import Data_Preprocessing as d
 
-x_train,x_test, mid_points,tags = d.init_data()
-
+x_train,x_test,tags = d.init_data()
 
 class Node():
     
-    def __init__(self, mid_points, data_index, parent, current_entropy, tag, level):
-        self.mid_points = mid_points
+    def __init__(self, data_index, parent, current_entropy, tag, level):
+        self.mid_points = d.calculate_mid_points(x_train[data_index])
+        self.best_value = 0
         self.parent = parent
         self.current_entropy = current_entropy
         self.tag = tag
         self.level = level
         self.data_index = data_index
         self.leaf = False
+        self.son_1 = None
+        self.son_2 = None
+
 
         if self.current_entropy == 0:
             self.leaf = True
@@ -36,54 +38,48 @@ class Node():
         if self.leaf:
             return None,None
 
-        if self.parent != None:
-            n = self.parent.data_index.shape[0]
-        else:
-            n = self.data_index.shape[0]
+        n = self.data_index.shape[0]
                 
         d_i = self.data_index
         gain = 0
-        for i in range(len(mid_points)):
-            for value in mid_points[i]:
-                branch_1 = d_i[x_train[d_i, i] < value]
-                branch_2 = d_i[x_train[d_i,i] >= value]
-                
-                
-                h1 = entropy_calculation(n,branch_1)
-                h2 = entropy_calculation(n,branch_2)
+        #for i in range(len(self.mid_points)):
+        for value in range(self.mid_points.size):
+            branch_1 = d_i[x_train[d_i, value] < self.mid_points[value]]
+            branch_2 = d_i[x_train[d_i,value] >= self.mid_points[value]]
+                        
+            h1 = entropy_calculation(n,branch_1)
+            h2 = entropy_calculation(n,branch_2)
 
-                new_gain = self.current_entropy - (h1 + h2)
+            new_gain = self.current_entropy - (h1 + h2)
+            
+            if new_gain < 0:
+                return None,None
+
+            if gain < new_gain:
+                gain = new_gain
+                print self.level
+                best_h1 = h1
+                best_h2 = h2
+                self.best_value = value
+                index_1 = branch_1
+                index_2 = branch_2
+                tag1 = tags[value] + " < " + str(value)
+                tag2 = tags[value] + " >= " + str(value)
     
-                if gain < new_gain:
-                    gain = new_gain
-                    print self.level
-                    best_h1 = h1
-                    best_h2 = h2
-                    best_value = value
-                    index_1 = branch_1
-                    index_2 = branch_2
-                    column = i
-                    tag1 = tags[i] + " < " + str(value)
-                    tag2 = tags[i] + " >= " + str(value)
+            
 
-        sample_1 = self.mid_points[:]
-        sample_2 = self.mid_points[:]
-        sample_1[column] = sample_1[column][sample_1[column] < best_value]
-        sample_2[column] = sample_2[column][sample_2[column] > best_value]
-
-        #if all(v.size == 0 for v in sample_1) or index_1.size == 0 or self.current_entropy == 0:
-            #self.leaf = True
-
-
-        n1 = Node(sample_1,index_1,self,best_h1,tag1, self.level + 1)
-        n2 = Node(sample_2,index_2,self,best_h2,tag2, self.level + 1)
-        
+        n1 = Node(index_1,self,best_h1,tag1, self.level + 1)
+        n2 = Node(index_2,self,best_h2,tag2, self.level + 1)
+    
+        self.son_1 = n1
+        self.son_2 = n2
+    
         return n1,n2
 
 def entropy_calculation(n,new_index):
 
-    distribution = x_train[new_index].shape[0] / float(n)
-    p0 = c.Counter(x_train[new_index][:, -1])[1] / float(x_train[new_index].shape[0])
+    distribution = new_index.shape[0] / float(n)
+    p0 = c.Counter(x_train[new_index][:, -1])[1] / float(new_index.shape[0])
     p1 = 1 - p0
     
     if p1 == 0 or p0 == 0:
@@ -103,13 +99,14 @@ def build_tree(n1,n2, tree):
     n1,n3 = n1.branch()
     n2,n4 = n2.branch() 
     
-    tree.append(build_tree(n1,n3,tree),build_tree(n2,n4,tree))
+    tree.append(build_tree(n1,n3,tree))
+    tree.append(build_tree(n2,n4,tree))
     
     return tree
 
 d_i = np.arange(x_train.shape[0])
 h = entropy_calculation(d_i.shape[0],d_i)
-root = Node(mid_points,d_i,None,h,"root",0)
+root = Node(d_i,None,h,"root",0)
 tree = [root]
 
 n1,n2 = root.branch()
