@@ -12,15 +12,20 @@ import math as m
 
 import Data_Preprocessing as d
 
-x_train,x_test,tags = d.init_data()
-mid_points = d.calculate_mid_points(x_train)
+use_nan = True
+algorithim = "ID3"
 
-print mid_points.size
+x_train,x_test,tags = d.init_data()
+mid_points = d.calculate_mid_points(x_train,slices=100)
+
+x_test = d.generate_Nan_test(x_test)
+
+
 
 class Node():
-    
+
     def __init__(self,mid_points_index ,data_index, parent, left, level,column):
-        
+
         self.mid_points = mid_points_index
         self.best_value = 0
         self.column = column
@@ -32,23 +37,23 @@ class Node():
         self.leaf = False
         self.son_1 = None
         self.son_2 = None
-
-
-        print "entropy",self.current_entropy
+        self.epilepsy = False
+        self.distribution = None
 
         if self.current_entropy == 0 or mid_points[self.mid_points].size == 0 or self.data_index.size == 0:
             self.leaf = True
 
     def branch(self):
-        
-        print "mid_points",mid_points[self.mid_points].size/178
-        print "data",self.data_index.size
-        
+
         if self.leaf:
+            self.distribution = c.Counter(x_train[self.data_index][:, -1])
+            if  self.distribution[1] / self.data_index.shape[0]  == 1:
+                self.epilepsy = True
+
             self.son_1 = None
             self.son_2 = None
             return
-    
+
 
         n = self.parent.data_index.shape[0] if self.parent != None else self.data_index.shape[0]
 
@@ -62,7 +67,17 @@ class Node():
                 h1 = entropy_calculation(n,branch_1)
                 h2 = entropy_calculation(n,branch_2)
 
-                new_gain = self.current_entropy - (h1 + h2)
+
+                if algorithim == "ID3":
+                    split_info = 1
+
+                elif algorithim == "C4.5":
+                    p0 = branch_2.size/self.data_index.size
+                    p1 = 1 - p0
+                    split_info = sum([m.log(p0, 2) * p0, m.log(p1, 2) * p1]) * -1
+
+
+                new_gain = (self.current_entropy - (h1 + h2)) / split_info
 
                 if gain < new_gain:
                     gain = new_gain
@@ -76,26 +91,26 @@ class Node():
         mid_points_index_2 = np.copy(self.mid_points)
         mid_points_index_1[:,self.column] = mid_points[:,self.column] < self.best_value
         mid_points_index_2[:,self.column] = mid_points[:,self.column] >= self.best_value
-                            
-        
+
+
         n1 = Node(mid_points_index_1,index_1,self,True, self.level + 1,self.column)
         n2 = Node(mid_points_index_2,index_2,self,False, self.level + 1,self.column)
-    
+
         self.son_1 = n1
         self.son_2 = n2
 
 def entropy_calculation(n,new_index):
-    
+
     if new_index.shape[0] == 0 or n == 0:
         return 0
-    
+
     distribution = new_index.shape[0] / float(n)
     p0 = c.Counter(x_train[new_index][:, -1])[1] / float(new_index.shape[0])
     p1 = 1 - p0
 
     if p1 == 0 or p0 == 0:
-        return 0       
-    
+        return 0
+
     h = sum([m.log(p0,2)*p0,m.log(p1,2)*p1])*-1
 
 
@@ -106,37 +121,66 @@ def build_tree(node):
 
     node.branch()
 
-    print node, node.son_1 if not node.leaf else None, node.son_2 if not node.leaf else None
-
     if node.son_1 != None:
         node = build_tree(node.son_1)
 
     if node.son_2 != None:
         build_tree(node.son_2)
-    
+
     return node.parent
+
+def test(node, sample):
+
+    if node.leaf:
+        return node.epilepsy,
+
+    if sample[node.column] == np.nan:
+        print "nan"
+        epilepsy_1, distribution_1 = test(node.son_1,sample)
+        epilepsy_2, distribution_2 = test(node.son_2, sample)
+
+        p1 = (distribution_1[1] + distribution_2[1])/node.data_index.size
+
+        return True if p1 >= 0.5 else False # INFORME
+
+
+    elif sample[node.column] < node.best_value:
+        return test(node.son_1, sample)
+    else:
+        return test(node.son_2,sample)
+
+
+def evaluate_test(root, x_test):
+
+    TP = 0
+    FP = 0
+    FN = 0
+    TN = 0
+
+    for sample in x_test:
+        classification = test(root,sample)
+        if classification and sample[-1] == 1:
+            TP += 1
+        elif classification and sample[-1] != 1:
+            FP +=1
+        elif not classification and sample[-1] == 1:
+            FN += 1
+        else:
+            TN +=1
+
+    accuracy = (TP+TN)/float((TP + TN + FP +FN))
+    precision = TP/float(TP + FP)
+    recall = TP/float(TP + FN)
+    specificity = TN/float((TN + FP))
+    f_score = 2 * precision * recall /(precision + recall)
+
+    return accuracy,precision,recall,specificity,f_score
+
 
 d_i = np.arange(x_train.shape[0]).T
 root = Node(np.ones((mid_points.shape),dtype="bool"),d_i,None,False,0,0)
-print "left branch\n"
 build_tree(root)
 
 
-
-
-"""
-node = root
-node2 = root
-while (node != None and node2 != None):
-
-    if node != None:
-        if not node.leaf:
-            print node.level, node.son_1.level, node.son_2.level
-            node = node.son_1
-
-    if node2 != None:
-        if not node2.leaf:
-            print node.level, node.son_1.level, node.son_2.level
-        node2 = node.son_2
-"""
+print evaluate_test(root,x_test)
 
