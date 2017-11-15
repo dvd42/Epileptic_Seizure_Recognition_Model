@@ -12,13 +12,14 @@ import math as m
 
 import Data_Preprocessing as d
 
-use_nan = True
-algorithim = "ID3"
+use_nan = False
+algorithm = "ID3"
 
 x_train,x_test,tags = d.init_data()
-mid_points = d.calculate_mid_points(x_train,slices=100)
+mid_points = d.calculate_mid_points(x_train,mid_points=10)
 
-x_test = d.generate_Nan_test(x_test)
+if use_nan:
+    x_test = d.generate_Nan_test(x_test)
 
 
 
@@ -68,21 +69,24 @@ class Node():
                 h2 = entropy_calculation(n,branch_2)
 
 
-                if algorithim == "ID3":
+                if algorithm == "ID3":
                     split_info = 1
 
-                elif algorithim == "C4.5":
+                elif algorithm == "C4.5":
                     p0 = branch_2.size/self.data_index.size
                     p1 = 1 - p0
-                    split_info = sum([m.log(p0, 2) * p0, m.log(p1, 2) * p1]) * -1
+                    if p1 == 0 or p0 == 0:
+                        split_info = 1
+                    else:
+                        split_info = sum([m.log(p0, 2) * p0, m.log(p1, 2) * p1]) * -1
 
 
-                new_gain = (self.current_entropy - (h1 + h2)) / split_info
+                new_gain = (self.current_entropy - (h1 + h2)) / float(split_info)
 
                 if gain < new_gain:
                     gain = new_gain
                     self.best_value = value
-                    self.column = i%self.mid_points.shape[1]
+                    self.column = i
                     index_1 = branch_1
                     index_2 = branch_2
 
@@ -98,6 +102,11 @@ class Node():
 
         self.son_1 = n1
         self.son_2 = n2
+
+        print self.best_value
+        print self.current_entropy
+        print "="*self.level
+
 
 def entropy_calculation(n,new_index):
 
@@ -132,8 +141,9 @@ def build_tree(node):
 def test(node, sample):
 
     if node.leaf:
-        return node.epilepsy,
+        return node.epilepsy
 
+    """
     if sample[node.column] == np.nan:
         print "nan"
         epilepsy_1, distribution_1 = test(node.son_1,sample)
@@ -142,9 +152,9 @@ def test(node, sample):
         p1 = (distribution_1[1] + distribution_2[1])/node.data_index.size
 
         return True if p1 >= 0.5 else False # INFORME
+    """
 
-
-    elif sample[node.column] < node.best_value:
+    if sample[node.column] < node.best_value:
         return test(node.son_1, sample)
     else:
         return test(node.son_2,sample)
@@ -159,6 +169,7 @@ def evaluate_test(root, x_test):
 
     for sample in x_test:
         classification = test(root,sample)
+        print classification
         if classification and sample[-1] == 1:
             TP += 1
         elif classification and sample[-1] != 1:

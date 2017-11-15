@@ -50,9 +50,11 @@ def init_data():
 
     return x_train,x_test ,tags
 
-def calculate_mid_points(data,slices=10):
+def calculate_mid_points(data,mid_points=10):
     data = np.sort(data[:,:-1],axis=0)
-    return data[np.mod(np.arange(data.shape[0]),data.shape[0]/slices) == 0,:][1:-1]
-    
+    a = data.shape[0]
+    b  = a/mid_points
+    return data[np.mod(np.arange(data.shape[0]),b) == 0,:][1:-1]
+
 
 
