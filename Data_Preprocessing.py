@@ -17,23 +17,13 @@ def init_data():
 
     # TODO implement other cross_validation methods
     # Using holdout
-    x_train = x[:x.shape[0]*2/3:,-3:]
+    x_train = x[:x.shape[0]*2/3:,:]
     x_test = x[x_train.shape[0]:x.shape[0]:,:]
 
 
     return x_train,x_test,tags
 
-def calculate_mid_points(data):
+def calculate_mid_points(data,slices=1000):
+    data = np.sort(data[:,:-1],axis=0)
+    return data[np.mod(np.arange(data.shape[0]),slices) == 0,:][1:-1]
     
-    slices = np.sort(data[:,:-1],axis=0)[0::data.shape[0]*0.065,:]
-    
-    if slices.shape[0] % 2:
-        slices = np.append(slices,slices[-1].reshape((1,2)),axis=0)
-    
-    mid_points = []
-
-    # Calculate the mid point for each 2 elements in each column
-    for i in range(slices.shape[1]):
-        mid_points.append((slices[::2,i]/2.0 + slices[1::2,i]/2.0))
-    
-    return mid_points
