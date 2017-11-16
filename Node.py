@@ -10,13 +10,19 @@ x_train,x_test,mid_points,tags = d.init_data()
 
 class Node():
 
-    def __init__(self,mid_points_index ,data_index, parent, left, level,column):
+    def __init__(self,mid_points_index ,data_index, parent,level,column):
+
+        """
+        :param level: the current tree depth 
+        :param column: index of the attribute that best divides the current data
+        :self.epilepsy: the class (1,positive !1 negative)
+        :self.distribution: the amount of samples belonging to each class
+        """
 
         self.mid_points = mid_points_index
         self.best_value = 0
         self.column = column
         self.parent = parent
-        self.left = left
         self.current_entropy = d.entropy_calculation(data_index.shape[0],data_index,x_train)
         self.level = level
         self.data_index = data_index
@@ -30,6 +36,9 @@ class Node():
             self.leaf = True
 
     def branch(self):
+        """
+        Expands current node 
+        """
 
         if self.check_leaf():
             return
@@ -43,12 +52,18 @@ class Node():
         mid_points_index_2 = np.copy(self.mid_points)
         mid_points_index_1[:, self.column] = mid_points[:, self.column] < self.best_value
         mid_points_index_2[:, self.column] = mid_points[:, self.column] >= self.best_value
-        n1 = Node(mid_points_index_1, index_1, self, True, self.level + 1, self.column)
-        n2 = Node(mid_points_index_2, index_2, self, False, self.level + 1, self.column)
+        n1 = Node(mid_points_index_1, index_1, self, self.level + 1, self.column)
+        n2 = Node(mid_points_index_2, index_2, self, self.level + 1, self.column)
         self.son_1 = n1
         self.son_2 = n2
 
     def get_best_attribute(self, n):
+        """
+        Finds the attribute that maximizes the gain
+        :param n: number samples in current node
+        
+        """
+
         gain = 0
         for i in range(self.mid_points.shape[1]):
             for value in mid_points[self.mid_points[:, i], i]:
@@ -82,6 +97,10 @@ class Node():
         return index_1, index_2
 
     def check_leaf(self):
+        """     
+        :return: True is self is a leaf, False otherwise
+        """
+
         if self.leaf:
             self.distribution = c.Counter(x_train[self.data_index][:, -1])
             if self.distribution[1] / self.data_index.shape[0] == 1:
@@ -94,6 +113,5 @@ class Node():
         return False
 
 def create_root():
-
-    root = Node(np.ones((mid_points.shape), dtype="bool"),np.arange(x_train.shape[0]).T,None, False, 0, 0)
+    root = Node(np.ones((mid_points.shape), dtype="bool"),np.arange(x_train.shape[0]).T,None,0, 0)
     return root

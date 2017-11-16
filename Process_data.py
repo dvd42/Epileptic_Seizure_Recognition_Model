@@ -13,6 +13,11 @@ import Runtime_Parser as rp
 
 
 def split_data(data,method):
+    """
+    :param data: the entire data-set
+    :param method: the cross-validation method that will be used
+    :return: the train and test sets
+    """
 
     if method == 1:
         x_train = data[:data.shape[0]*2/3:,:]
@@ -33,6 +38,12 @@ def split_data(data,method):
 
 
 def generate_Nan_test(x_test,nans):
+    """
+    
+    :param x_test: the test set
+    :param nans: how many you want to insert in the test set
+    :return: the test set with nans inserted
+    """
 
     x_test = x_test.astype(float)
     for k in range(nans):
@@ -44,6 +55,11 @@ def generate_Nan_test(x_test,nans):
 
 
 def init_data():
+
+    """
+    
+    :return: the train and test sets, the mid_points and the names of the columns in the data-set
+    """
 
     # Import the data_set
     data_set = pd.read_csv(rp.data)
@@ -59,12 +75,24 @@ def init_data():
     return x_train,x_test,mid_points,tags
 
 def calculate_mid_points(data,mid_points):
+    """
+    :param data: the partial data-set from which to get the mid_points
+    :param mid_points: number of desired mid_points
+    :return: the new mid points
+    """
     data = np.sort(data[:,:-1],axis=0)
     return data[np.mod(np.arange(data.shape[0]),data.shape[0]/mid_points) == 0,:][1:-1]
 
 
 
 def entropy_calculation(n,new_index,data):
+    """
+    
+    :param n: the number of samples in the parent node
+    :param new_index: index of the data that belongs to the son of current node
+    :param data: entire data-set
+    :return: the resulting entropy 
+    """
 
     if new_index.shape[0] == 0 or n == 0:
         return 0

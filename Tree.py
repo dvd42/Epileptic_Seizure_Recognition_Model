@@ -7,6 +7,10 @@ Created on Mon Nov 13 09:13:02 2017
 """
 
 def build_tree(node):
+    """
+    :param node: the current node to be expanded
+    :return: its a recursive function, it will ultimately return None (which is the parent of the root node)
+    """
 
     node.branch()
 
@@ -18,14 +22,19 @@ def build_tree(node):
 
     return node.parent
 
-def show_tree(node,tags):
+def draw_tree(node, tags):
+    """
+    :param node: node to be drawn 
+    :param tags: the name of the columns in the original dataset
+    :return: prints the tree
+    """
 
     if node.son_1 == None and node.son_2 == None:
         return
 
     print "=="*node.level + " Data : %d Positives: %d Negatives: %d, %s %d "  %(node.data_index.size,node.distribution[1],node.data_index.size - node.distribution[1], tags[node.column],node.best_value)
-    show_tree(node.son_1,tags)
-    show_tree(node.son_2,tags)
+    draw_tree(node.son_1, tags)
+    draw_tree(node.son_2, tags)
 
 
 
