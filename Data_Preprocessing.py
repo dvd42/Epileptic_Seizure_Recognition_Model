@@ -28,7 +28,7 @@ def split_data(data,method="holdout"):
 
 
 
-def generate_Nan_test(x_test,nans=5):
+def generate_Nan_test(x_test,nans=10000):
 
     x_test = x_test.astype(float)
     for k in range(nans):
@@ -50,11 +50,9 @@ def init_data():
 
     return x_train,x_test ,tags
 
-def calculate_mid_points(data,mid_points=10):
+def calculate_mid_points(data,mid_points=15):
     data = np.sort(data[:,:-1],axis=0)
-    a = data.shape[0]
-    b  = a/mid_points
-    return data[np.mod(np.arange(data.shape[0]),b) == 0,:][1:-1]
+    return data[np.mod(np.arange(data.shape[0]),data.shape[0]/mid_points) == 0,:][1:-1]
 
 
 

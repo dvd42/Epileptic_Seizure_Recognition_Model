@@ -9,18 +9,16 @@ Created on Mon Nov 13 09:13:02 2017
 import collections as c
 import numpy as np
 import math as m
-
 import Data_Preprocessing as d
 
-use_nan = False
-algorithm = "ID3"
+use_nan = True
+algorithm = "C4.5"
 
 x_train,x_test,tags = d.init_data()
-mid_points = d.calculate_mid_points(x_train,mid_points=10)
+mid_points = d.calculate_mid_points(x_train,mid_points=3)
 
 if use_nan:
     x_test = d.generate_Nan_test(x_test)
-
 
 
 class Node():
@@ -39,7 +37,7 @@ class Node():
         self.son_1 = None
         self.son_2 = None
         self.epilepsy = False
-        self.distribution = None
+        self.distribution = c.Counter(x_train[self.data_index][:,-1])
 
         if self.current_entropy == 0 or mid_points[self.mid_points].size == 0 or self.data_index.size == 0:
             self.leaf = True
@@ -67,7 +65,6 @@ class Node():
 
                 h1 = entropy_calculation(n,branch_1)
                 h2 = entropy_calculation(n,branch_2)
-
 
                 if algorithm == "ID3":
                     split_info = 1
@@ -103,10 +100,6 @@ class Node():
         self.son_1 = n1
         self.son_2 = n2
 
-        print self.best_value
-        print self.current_entropy
-        print "="*self.level
-
 
 def entropy_calculation(n,new_index):
 
@@ -141,24 +134,33 @@ def build_tree(node):
 def test(node, sample):
 
     if node.leaf:
-        return node.epilepsy
+        return node.epilepsy,node.distribution[1]
 
-    """
-    if sample[node.column] == np.nan:
-        print "nan"
+    if np.isnan(sample[node.column]):
         epilepsy_1, distribution_1 = test(node.son_1,sample)
         epilepsy_2, distribution_2 = test(node.son_2, sample)
 
-        p1 = (distribution_1[1] + distribution_2[1])/node.data_index.size
+        p1 = (distribution_1 + distribution_2)/float(node.data_index.size)
 
-        return True if p1 >= 0.5 else False # INFORME
-    """
+        if p1 >= 0.5:
+            return True,distribution_1
+        else:
+            return False,distribution_2
 
     if sample[node.column] < node.best_value:
         return test(node.son_1, sample)
     else:
         return test(node.son_2,sample)
 
+
+def show_tree(node):
+
+    if node.son_1 == None and node.son_2 == None:
+        return
+
+    print str(node.level) +  "=="*node.level + " Data : %d Positives: %d Negatives: %d, %s %d "  %(node.data_index.size,node.distribution[1],node.data_index.size - node.distribution[1], tags[node.column],node.best_value)
+    show_tree(node.son_1)
+    show_tree(node.son_2)
 
 def evaluate_test(root, x_test):
 
@@ -168,8 +170,7 @@ def evaluate_test(root, x_test):
     TN = 0
 
     for sample in x_test:
-        classification = test(root,sample)
-        print classification
+        classification,garbage = test(root,sample)
         if classification and sample[-1] == 1:
             TP += 1
         elif classification and sample[-1] != 1:
@@ -191,6 +192,7 @@ def evaluate_test(root, x_test):
 d_i = np.arange(x_train.shape[0]).T
 root = Node(np.ones((mid_points.shape),dtype="bool"),d_i,None,False,0,0)
 build_tree(root)
+#show_tree(root)
 
 
 print evaluate_test(root,x_test)
